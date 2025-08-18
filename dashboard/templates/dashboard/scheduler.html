@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduler</title>
+</head>
+<body>
+
+<h1>Schedule Irrigation Tasks</h1>
+
+<!-- Form to add a new task to the schedule -->
+<h2>BST - Schedule Irrigation Tasks</h2>
+
+<form method="post">
+  {% csrf_token %}
+  <label>Time:</label>
+  <input type="text" name="time" placeholder="e.g., 08:30" required>
+  <label>Task:</label>
+  <input type="text" name="task" placeholder="e.g., Water Zone A" required>
+  <button type="submit">Add Schedule</button>
+</form>
+
+<!-- Table to display the scheduled tasks sorted by time -->
+<table border="1" style="margin-top: 20px;">
+  <tr><th>Time</th><th>Task</th></tr>
+  {% for time, task in schedule %}
+    <tr><td>{{ time }}</td><td>{{ task }}</td></tr>
+  {% endfor %}
+</table>
+
+</body>
+</html>

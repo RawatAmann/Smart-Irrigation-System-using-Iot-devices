@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+    // Your Firebase config (replace with your own from Firebase Console)
+    const firebaseConfig = {
+        apiKey: "AIzaSyASKMiTsE08BRk4BlOfypdM-ml9dQMtSPM",
+        authDomain: "irrigateiq-9fe90.firebaseapp.com",
+        databaseURL: "https://irrigateiq-9fe90-default-rtdb.firebaseio.com",
+        projectId: "irrigateiq-9fe90",
+        storageBucket: "irrigateiq-9fe90.firebasestorage.app",
+        messagingSenderId: "381398928706",
+        appId: "1:381398928706:web:50f411c553ce642b3e0cdb"
+    };
+
+
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+</script>
+
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Irrigation Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(-20deg, #049f30, #eff309, #192cdb, #e80d14);
+            background-size: 400% 400%;
+            animation: gradientBG 5s ease infinite;
+            padding: 20px;
+        }
+        @keyframes gradientBG {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+        .container {
+            background-color: #ffffffcc;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        h2, h3 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        table, th, td {
+            border: 1px solid #dee2e6;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            background-color: white;
+        }
+        .form-container input, .form-container button {
+            padding: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .form-container button {
+            background-color: #198754;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .form-container button:hover {
+            background-color: #157347;
+        }
+        .action-result {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ced4da;
+        }
+        .current-data {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .data-box {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .data-box i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            color: #4958e3;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .hash-table .card {
+            transition: transform 0.2s;
+        }
+        .hash-table .card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        .hash-table .card-header {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        /* Vis network node styles */
+        #irrigationGraph {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Smart Irrigation Dashboard</h2>
+    <div class="container">
+
+        <!-- Action Result (Undo/Redo) -->
+        <div class="action-result">
+            <h3>Action Result:</h3>
+            <p>{{ action_result }}</p>
+        </div>
+
+
+        <br><Br><hr>
+        <!-- Current Sensor Data -->
+        <h3>Real-time Sensor Data</h3>
+        <div class="current-data">
+            <div class="data-box">
+                <i class="fas fa-tag"></i> 
+                <h4>Sensor ID</h4>
+                <p>{{ sensor.sensor_id }}</p>
+            </div>
+            <div class="data-box">
+                <i class="fas fa-thermometer-half"></i>
+                <h4>Temperature</h4>
+                <p>{{ sensor.temperature }} °C</p>
+            </div>
+            <div class="data-box">
+                <i class="fas fa-tint"></i>
+                <h4>Humidity</h4>
+                <p>{{ sensor.humidity }} %</p>
+            </div>
+            <div class="data-box">
+                <i class="fas fa-water"></i>
+                <h4>Soil Moisture</h4>
+                <p>{{ sensor.soil_moisture }} %</p>
+            </div>
+        </div>
+
+        
+        <br><Br><hr>
+        <!-- Buffered Data (Queue) -->
+        <div class="buffered-data">
+            <h3>Buffered Sensor Data (Queue)</h3>
+            <table>
+                <tr>
+                    <th>Sensor ID</th>
+                    <th>Temperature</th>
+                    <th>Humidity</th>
+                    <th>Soil Moisture</th>
+                </tr>
+                {% for data in buffered_data %}
+                    <tr>
+                        <td>{{ data.sensor_id|default:"unknown" }}</td>
+                        <td>{{ data.temperature|default:0 }}</td>
+                        <td>{{ data.humidity|default:0 }}</td>
+                        <td>{{ data.soil_moisture|default:0 }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+
+        <br><Br><hr>
+        <!-- Hash Table -->
+        <div class="hash-table">
+            <h3>Hash Table of Sensor Data</h3>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for key, value in hash_table.items|slice:":10" %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-key"></i> Key: {{ key }}
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Value</h5>
+                            <p class="card-text">
+                                {{ value }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+
+        <br><Br><hr><br>
+        <!-- Graph (Irrigation Zones) -->
+        <div class="graph">
+            <h3>Irrigation Zones (Graph)</h3>
+            <div id="irrigationGraph"></div>
+        </div><br>
+        <div class="form-container">
+            <form method="get">
+                <label for="action">Perform Action:</label>
+                <input type="text" id="action" name="action" placeholder="e.g., Water Zone A">
+                <button type="submit">Perform Action</button>
+            </form>
+        </div>
+        <div class="form-container">
+            <form method="get">
+                <button type="submit" name="undo" value="1">Undo</button>
+                <button type="submit" name="redo" value="1">Redo</button>
+            </form>
+        </div>
+
+        <br><Br><hr>
+
+        <!-- Undo/Redo Form -->
+        <br><br><h3>Scheduling</h3><br>
+        <div class="form-container">
+    <label for="firebaseAction">Enter Action:</label>
+    <input type="text" id="firebaseAction" placeholder="e.g., Water Zone A">
+    <button type="button" id="sendControl1">Perform Action</button>
+    <button type="button" id="sendControl0">Undo</button>
+</div>
+
+
+
+
+
+
+
+<!-- 
+<br><hr><br>
+
+        <h3>Scheduled Irrigation Tasks (BST)</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Task</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for time, task in schedule %}
+        <tr>
+            <td>{{ time }}</td>
+            <td>{{ task }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2">No scheduled tasks yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+ -->
+
+        
+
+    </div>
+
+
+<script>
+    document.getElementById("sendControl1").addEventListener("click", function () {
+        const actionText = document.getElementById("firebaseAction").value.trim();
+
+        // Send action text to Firebase (optional)
+        if (actionText !== "") {
+            firebase.database().ref("action is -> ").set(actionText);
+        }
+
+        // Send control: 1
+        firebase.database().ref("control").set(1)
+            .then(() => {
+                alert("Action performed and control set to 1.");
+            })
+            .catch((error) => {
+                alert("Error: " + error.message);
+            });
+    });
+
+    document.getElementById("sendControl0").addEventListener("click", function () {
+        firebase.database().ref("control").set(0)
+            .then(() => {
+                alert("Undo action: control set to 0.");
+            })
+            .catch((error) => {
+                alert("Error: " + error.message);
+            });
+    });
+</script>
+
+
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const nodes = [];
+        const edges = [];
+
+        const graphData = {{ graph|safe }};
+
+
+        // Create nodes and edges from Django dict
+        Object.entries(graphData).forEach(([zone, neighbors]) => {
+            nodes.push({ id: zone, label: zone });
+            neighbors.forEach(target => {
+                edges.push({ from: zone, to: target });
+            });
+        });
+
+        const container = document.getElementById("irrigationGraph");
+        const data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges)
+        };
+        const options = {
+            layout: { improvedLayout: true },
+            physics: { enabled: true },
+            edges: {
+                arrows: "to",
+                smooth: true,
+                width: 2,
+                color: { color: '#4958e3' }
+            },
+            nodes: {
+                shape: "box",
+                color: {
+                    background: '#4958e3',
+                    border: '#333'
+                },
+                font: { color: "#fff", size: 16, face: 'Arial' },
+                borderWidth: 2
+            }
+        };
+
+        new vis.Network(container, data, options);
+    });
+    </script>
+
+</body>
+</html>
